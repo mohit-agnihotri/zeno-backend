@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: zeno-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        value: https://lbtjrekxvibmoltnmcle.supabase.co
+      - key: SUPABASE_KEY
+        value: sb_publishable_aizoTD5cXFgZfCjq6BJCug_vKU5W8jm
+      - key: ENVIRONMENT
+        value: production
