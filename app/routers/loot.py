@@ -53,8 +53,6 @@ FREE_CERTS = [
     )
 ]
 
-]
-
 # --- AI VALIDATED REDDIT CACHE ---
 reddit_certs_cache = {
     "timestamp": 0,
