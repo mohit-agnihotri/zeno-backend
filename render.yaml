@@ -11,3 +11,5 @@ services:
         value: sb_publishable_aizoTD5cXFgZfCjq6BJCug_vKU5W8jm
       - key: ENVIRONMENT
         value: production
+      - key: PYTHON_VERSION
+        value: 3.11.0
