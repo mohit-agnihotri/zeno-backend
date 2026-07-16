@@ -26,17 +26,8 @@ async def get_dashboard(user_id: str):
         "percentile": 50,
     }
 
-from app.routers.tracker import _LOCAL_APPS
-
     if not db:
-        user_apps = [app for app in _LOCAL_APPS if app.get("user_id") == user_id]
-        profile["applied_count"] = len(user_apps)
-        profile["viewed_count"] = sum(1 for a in user_apps if a["status"] in ["viewed", "replied", "offer"])
-        profile["replied_count"] = sum(1 for a in user_apps if a["status"] in ["replied", "offer"])
-        profile["offer_count"] = sum(1 for a in user_apps if a["status"] == "offer")
-        profile["streak_days"] = min(profile["applied_count"], 14)
-        profile["percentile"] = min(95, 50 + profile["applied_count"] * 2)
-        return {"profile": profile, "source": "local"}
+        return {"profile": profile, "source": "default"}
 
     try:
         # Fetch user profile
