@@ -1,7 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.resume_parser import extract_text_from_pdf, parse_resume_with_ai
 from app.services.ats_checker import calculate_ats_score
-from app.services.local_jobs import score_jobs_against_resume, get_embedding
 from app.core.database import get_db
 import tempfile
 import os
@@ -34,8 +33,8 @@ async def upload_and_parse_resume(user_id: str, file: UploadFile = File(...)):
         # 3. Calculate ATS Score (rule-based, no AI needed)
         ats_result = calculate_ats_score(raw_text, [])
 
-        # 4. Score jobs locally using sentence-transformers
-        matched_jobs = score_jobs_against_resume(raw_text, top_n=20)
+        # 4. Return empty matches (Android client will automatically fallback to /jobs/matches API)
+        matched_jobs = []
 
         # 5. Try AI parsing (optional — needs Ollama running)
         parsed_data = None
@@ -48,12 +47,11 @@ async def upload_and_parse_resume(user_id: str, file: UploadFile = File(...)):
         db = get_db()
         if db:
             try:
-                resume_vector = get_embedding(raw_text).tolist()
                 db.table("resumes").upsert({
                     "user_id": user_id,
                     "parsed_text": raw_text,
                     "ats_score": ats_result.score,
-                    "resume_vector": resume_vector,
+                    "resume_vector": [],
                     "parsed_skills": parsed_data.skills if parsed_data else [],
                 }).execute()
 
