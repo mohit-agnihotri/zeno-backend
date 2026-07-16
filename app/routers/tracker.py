@@ -94,3 +94,23 @@ async def delete_application(application_id: str):
         return {"message": "Application removed."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/user/{user_id}/data")
+async def delete_user_data(user_id: str):
+    """Completely wipe a user's data (DPDPA Compliance)."""
+    db = get_db()
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected.")
+        
+    try:
+        # Supabase RLS and cascade rules usually handle this if set up properly, 
+        # but we explicitly delete from related tables just in case.
+        db.table("applications").delete().eq("user_id", user_id).execute()
+        db.table("resumes").delete().eq("user_id", user_id).execute()
+        # Delete user record last
+        db.table("users").delete().eq("id", user_id).execute()
+        
+        return {"message": "All user data permanently deleted."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete user data: {str(e)}")

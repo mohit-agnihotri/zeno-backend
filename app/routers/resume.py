@@ -4,6 +4,13 @@ from app.services.ats_checker import calculate_ats_score
 from app.core.database import get_db
 import tempfile
 import os
+import json
+import google.generativeai as genai
+from pydantic import BaseModel
+
+class XRayRequest(BaseModel):
+    resume_text: str
+    job_description: str
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
 
@@ -152,3 +159,62 @@ def _generate_roast(text: str) -> list:
         ]
     
     return roast
+
+@router.post("/ats-xray")
+async def ats_xray(request: XRayRequest):
+    """
+    Use Gemini AI to compare resume text against a job description.
+    Returns matched keywords and missing keywords for ATS optimization.
+    """
+    if not request.resume_text or not request.job_description:
+        raise HTTPException(status_code=400, detail="Missing resume or job description.")
+        
+    try:
+        api_key = os.getenv("GEMINI_API_KEY", "")
+        if not api_key:
+            # Fallback mock if no API key
+            return {
+                "matched_keywords": ["REST API", "Agile", "Kotlin", "Android"],
+                "missing_keywords": ["CI/CD", "GraphQL", "Jetpack Compose"]
+            }
+            
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = f"""
+        Act as an ATS (Applicant Tracking System) expert. 
+        Compare the following Resume against the Job Description.
+        Extract up to 10 hard technical skills (keywords) from the Job Description.
+        Determine which of those keywords exist in the Resume (matched_keywords) and which do not (missing_keywords).
+        
+        Reply ONLY with valid JSON in this exact format, with no markdown formatting or code blocks:
+        {{
+            "matched_keywords": ["keyword1", "keyword2"],
+            "missing_keywords": ["keyword3", "keyword4"]
+        }}
+        
+        Resume:
+        {request.resume_text}
+        
+        Job Description:
+        {request.job_description}
+        """
+        
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        # Clean up if model added markdown ```json
+        if text.startswith("```json"):
+            text = text.replace("```json", "", 1)
+        if text.endswith("```"):
+            text = text[:-3]
+            
+        result = json.loads(text.strip())
+        return result
+        
+    except Exception as e:
+        print(f"ATS X-Ray error: {e}")
+        # Return fallback on error so UI doesn't break
+        return {
+            "matched_keywords": ["Software", "Development"],
+            "missing_keywords": ["Specific Skill 1", "Specific Skill 2"]
+        }

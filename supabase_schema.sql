@@ -58,3 +58,13 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE resumes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE applications DISABLE ROW LEVEL SECURITY;
+
+-- 4. Company Cache (For AI Culture Scores & Response Rates)
+CREATE TABLE IF NOT EXISTS company_cache (
+    company TEXT PRIMARY KEY,
+    culture_score NUMERIC(3,1) DEFAULT 7.0,
+    response_rate NUMERIC(5,2) DEFAULT 0.0,
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE company_cache DISABLE ROW LEVEL SECURITY;
