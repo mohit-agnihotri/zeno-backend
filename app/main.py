@@ -27,6 +27,11 @@ app.include_router(dashboard.router)
 def read_root():
     return {"message": "Zeno API v1.0 — AI Career Super-App Backend", "status": "running"}
 
+@app.get("/ping")
+def ping():
+    """Keep-alive endpoint — pinged every 10 min by cron-job.org to prevent Render spin-down."""
+    return {"status": "awake", "message": "Zeno backend is alive! 🚀"}
+
 @app.get("/health")
 def health_check():
     db = get_db()
