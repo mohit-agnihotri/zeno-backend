@@ -62,11 +62,17 @@ async def upload_and_parse_resume(user_id: str, file: UploadFile = File(...)):
                     "parsed_skills": parsed_data.skills if parsed_data else [],
                 }).execute()
 
-                if parsed_data and parsed_data.college:
-                    db.table("users").update({
-                        "college": parsed_data.college,
-                        "graduation_year": parsed_data.graduation_year
-                    }).eq("id", user_id).execute()
+                if parsed_data:
+                    update_data = {}
+                    if parsed_data.name: update_data["name"] = parsed_data.name
+                    if parsed_data.college: update_data["college"] = parsed_data.college
+                    if parsed_data.graduation_year: update_data["graduation_year"] = parsed_data.graduation_year
+                    
+                    if update_data:
+                        # Ensure user exists first, if not, create it so we can update
+                        # but dashboard handles guest users, let's just upsert
+                        update_data["id"] = user_id
+                        db.table("users").upsert(update_data).execute()
             except Exception as db_err:
                 print(f"Supabase save error (non-fatal): {db_err}")
 

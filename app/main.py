@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import get_db
-from app.routers import resume, match, tracker, dashboard, loot
+from app.routers import resume, match, tracker, dashboard, loot, users
 
 app = FastAPI(
     title="Zeno API",
@@ -23,6 +23,7 @@ app.include_router(match.router)
 app.include_router(tracker.router)
 app.include_router(dashboard.router)
 app.include_router(loot.router)
+app.include_router(users.router)
 
 @app.get("/")
 def read_root():

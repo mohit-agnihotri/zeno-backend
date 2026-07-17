@@ -41,11 +41,22 @@ async def get_dashboard(user_id: str):
                 "city": u.get("city", "India"),
             })
 
+        # Calculate dynamic profile strength
+        base_strength = 0
+        if profile["name"] not in ["User", "Your Name", ""]:
+            base_strength += 20
+        if profile["college"] not in ["Your University", ""]:
+            base_strength += 20
+        if profile["city"] not in ["India", ""]:
+            base_strength += 10
+            
+        profile["profile_strength"] = base_strength
+
         # Fetch resume data for ATS score
         resume_res = db.table("resumes").select("ats_score").eq("user_id", user_id).execute()
         if resume_res.data:
             profile["ats_score"] = resume_res.data[0].get("ats_score", 0)
-            profile["profile_strength"] = min(95, 30 + profile["ats_score"] // 2)
+            profile["profile_strength"] = min(100, base_strength + (profile["ats_score"] // 2))
 
         # Fetch application counts
         apps_res = db.table("applications").select("status").eq("user_id", user_id).execute()

@@ -1,6 +1,8 @@
 from pypdf import PdfReader
 import json
 import httpx
+import os
+import google.generativeai as genai
 from typing import Optional
 from app.schemas.resume import ParsedResume
 
@@ -22,7 +24,7 @@ def extract_text_from_pdf(file_path: str) -> str:
 
 
 async def parse_resume_with_ai(resume_text: str) -> Optional[ParsedResume]:
-    """Sends extracted text to local Ollama (Phi-3) to extract structured JSON."""
+    """Sends extracted text to Gemini to extract structured JSON."""
     
     prompt = f"""
     You are an expert ATS (Applicant Tracking System). Extract the following information from the resume text provided below.
@@ -42,26 +44,21 @@ async def parse_resume_with_ai(resume_text: str) -> Optional[ParsedResume]:
     {resume_text}
     """
 
-    payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "stream": False,
-        "format": "json" # Ollama supports JSON mode natively
-    }
-
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(OLLAMA_API_URL, json=payload)
-            response.raise_for_status()
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        ai_resp = model.generate_content(prompt)
+        
+        raw_text = ai_resp.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text.split("```json")[1].split("```")[0].strip()
+        elif raw_text.startswith("```"):
+            raw_text = raw_text.split("```")[1].split("```")[0].strip()
             
-            data = response.json()
-            response_text = data.get("response", "{}")
-            
-            # Parse the JSON returned by Phi-3
-            parsed_data = json.loads(response_text)
-            
-            return ParsedResume(**parsed_data)
-            
+        json_data = json.loads(raw_text)
+        return ParsedResume(**json_data)
+        
     except Exception as e:
-        print(f"Ollama AI Error: {e}")
+        print(f"Error parsing resume with Gemini: {e}")
         return None
